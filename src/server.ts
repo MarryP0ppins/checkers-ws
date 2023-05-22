@@ -72,7 +72,10 @@ export class CheckerServer {
                 this.openGames = this.openGames.filter((game) => game.id !== message.gameId);
                 this.io.to(COMMON_ROOM).emit('removeOpenGame', message.gameId);
             });
-
+            socket.on('playerMakeMove',(message) => {
+                console.log(message)
+            });
+            // 
             socket.on('disconnect', () => {
                 const openGame = this.openGames.find((game) => game.socketId === socketId);
                 if (openGame) {
@@ -81,6 +84,7 @@ export class CheckerServer {
                 }
                 console.log('Client disconnected');
             });
+
         });
     }
 
