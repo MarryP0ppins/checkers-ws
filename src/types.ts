@@ -52,9 +52,14 @@ export interface GameStartProps {
     status: GameStatus;
 }
 
+export interface JoinGameProps {
+    socketId: string;
+    userId: number;
+}
+
 export interface ClientToServerEvents {
     createGameRequest: (message: CreateGameRequest, callback: (gameId: number) => void) => void;
-    joinGame: (socketId: string) => void;
+    joinGame: (data: JoinGameProps) => void;
     playerMove: (data: MoveProps) => void;
 }
 

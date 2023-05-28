@@ -17,8 +17,11 @@ export class CheckerServer {
     private port: string | number;
     private openGames: (GameListData & { socketId: string })[] = [];
     private currentOpenGameId = 0;
-    private waitingSockets:Socket<ClientToServerEvents, ServerToClientEvents, DefaultEventsMap, any>[] = []
-    
+    private waitingSockets: {
+        socket: Socket<ClientToServerEvents, ServerToClientEvents, DefaultEventsMap, any>;
+        userId: number;
+    }[] = [];
+
     constructor() {
         this.app = express();
         this.app.get('/', (req, res) => {
@@ -47,9 +50,9 @@ export class CheckerServer {
             console.log('Connected client on port %s.', this.port);
             socket.join(COMMON_ROOM);
             socket.emit('openGames', this.openGames);
-            socket.on('createGameRequest', (message, callback) => {
+            socket.on('createGameRequest', (message) => {
                 socket.leave(COMMON_ROOM);
-                this.waitingSockets.push(socket)
+                this.waitingSockets.push({ socket:socket, userId: message.userId });
                 //socket.join(String(this.currentOpenGameId));
                 //callback(this.currentOpenGameId);
                 this.openGames.push({
@@ -70,19 +73,20 @@ export class CheckerServer {
                 ]);
                 this.currentOpenGameId = this.currentOpenGameId + 1;
             });
-            socket.on('joinGame', (socketId) => {
+            socket.on('joinGame', (message) => {
                 socket.leave(COMMON_ROOM);
+                const enemy = this.waitingSockets.find((socket) => socket.socket.id === message.socketId);
+                console.log(`user_1 - ${message.userId}\n`, `user_2 - ${enemy?.userId ?? -1}`);
                 //тут должен быть grpc метод создания игры, который вернет id игры и id игроков. Этот id будет идентификатором игры
-                //socket.join(String(gameId)); // раскомментировать все строки когда будет готов grpc и вставить id игры вместо gameId
-                //const enemy = this.waitingSockets.find((socket)=>socket.id === socketId)
+                //socket.join(String(gameId)); // расcкомментировать все строки когда будет готов grpc и вставить id игры вместо gameId
                 //enemy?.join(String(gameId))
                 //this.waitingSockets = this.waitingSockets.filter((socket)=>socket.id !== socketId)
-                //this.io.to(String(gameId)).emit('gameStart',gameId)
+                //this.io.to(String(gameId)).emit('gameStart',data)
                 this.openGames = this.openGames.filter((game) => game.socketId !== socketId);
                 this.io.to(COMMON_ROOM).emit('removeOpenGame', socketId);
             });
-            socket.on('playerMove',(message) => {
-                socket.to(String(message.gameId)).emit('enemyMove',message)
+            socket.on('playerMove', (message) => {
+                socket.to(String(message.gameId)).emit('enemyMove', message);
             });
             socket.on('disconnect', () => {
                 const openGame = this.openGames.find((game) => game.socketId === socketId);
