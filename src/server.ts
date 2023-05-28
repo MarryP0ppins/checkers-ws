@@ -2,7 +2,8 @@ import { createServer, Server as HttpServer } from 'http';
 
 import cors from 'cors';
 import express from 'express';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
+import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 
 import { COMMON_ROOM } from './constants';
 import { ClientToServerEvents, GameListData, ServerToClientEvents } from './types';
@@ -16,7 +17,8 @@ export class CheckerServer {
     private port: string | number;
     private openGames: (GameListData & { socketId: string })[] = [];
     private currentOpenGameId = 0;
-
+    private waitingSockets:Socket<ClientToServerEvents, ServerToClientEvents, DefaultEventsMap, any>[] = []
+    
     constructor() {
         this.app = express();
         this.app.get('/', (req, res) => {
@@ -47,8 +49,9 @@ export class CheckerServer {
             socket.emit('openGames', this.openGames);
             socket.on('createGameRequest', (message, callback) => {
                 socket.leave(COMMON_ROOM);
-                socket.join(String(this.currentOpenGameId));
-                callback(this.currentOpenGameId);
+                this.waitingSockets.push(socket)
+                //socket.join(String(this.currentOpenGameId));
+                //callback(this.currentOpenGameId);
                 this.openGames.push({
                     id: this.currentOpenGameId,
                     socketId: socketId,
@@ -59,6 +62,7 @@ export class CheckerServer {
                 socket.to(COMMON_ROOM).emit('openGames', [
                     {
                         id: this.currentOpenGameId,
+                        socketId: socketId,
                         userId: message.userId,
                         username: message.username,
                         rating: message.rating,
@@ -66,25 +70,28 @@ export class CheckerServer {
                 ]);
                 this.currentOpenGameId = this.currentOpenGameId + 1;
             });
-            socket.on('joinGame', (message) => {
+            socket.on('joinGame', (socketId) => {
                 socket.leave(COMMON_ROOM);
-                socket.join(String(message.gameId));
-                this.openGames = this.openGames.filter((game) => game.id !== message.gameId);
-                this.io.to(COMMON_ROOM).emit('removeOpenGame', message.gameId);
+                //тут должен быть grpc метод создания игры, который вернет id игры и id игроков. Этот id будет идентификатором игры
+                //socket.join(String(gameId)); // раскомментировать все строки когда будет готов grpc и вставить id игры вместо gameId
+                //const enemy = this.waitingSockets.find((socket)=>socket.id === socketId)
+                //enemy?.join(String(gameId))
+                //this.waitingSockets = this.waitingSockets.filter((socket)=>socket.id !== socketId)
+                //this.io.to(String(gameId)).emit('gameStart',gameId)
+                this.openGames = this.openGames.filter((game) => game.socketId !== socketId);
+                this.io.to(COMMON_ROOM).emit('removeOpenGame', socketId);
             });
-            socket.on('playerMakeMove',(message) => {
-                console.log(message)
+            socket.on('playerMove',(message) => {
+                socket.to(String(message.gameId)).emit('enemyMove',message)
             });
-            // 
             socket.on('disconnect', () => {
                 const openGame = this.openGames.find((game) => game.socketId === socketId);
                 if (openGame) {
                     this.openGames = this.openGames.filter((game) => game.socketId !== socketId);
-                    this.io.to(COMMON_ROOM).emit('removeOpenGame', openGame.id);
+                    this.io.to(COMMON_ROOM).emit('removeOpenGame', openGame.socketId);
                 }
                 console.log('Client disconnected');
             });
-
         });
     }
 
