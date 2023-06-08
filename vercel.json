@@ -2,9 +2,9 @@
   "version": 2,
   "name": "checkers-ws",
   "builds": [
-    { "src": "src/index.mjs", "use": "@vercel/node" }
+    { "src": "index.mjs", "use": "@vercel/node" }
   ],
   "routes": [
-    { "src": "src/(.*)", "dest": "/index.mjs" }
+    { "src": "/(.*)", "dest": "/index.mjs" }
   ]
 }

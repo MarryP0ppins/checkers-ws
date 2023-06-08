@@ -2,18 +2,17 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import grpc from '@grpc/grpc-js';
 import { loadSync } from '@grpc/proto-loader';
-import { randomInt } from 'crypto';
 import express from 'express';
 const app = express();
 
-const httpServer = createServer(app); //app
+const httpServer = createServer(); //app
 
 app.get('/', (req, res) => {
     res.json({ message: 'ok' });
 });
 
 // Listening to the server we created on port 5000.
-httpServer.listen(5000);
+httpServer.listen(5000, 'localhost');
 
 // Create socket.io instance be passing the server we created to the socket library
 const io = new Server(httpServer, {
@@ -64,20 +63,17 @@ io.on('connect', (socket) => {
     });
     socket.on('joinGame', (message) => {
         socket.leave(COMMON_ROOM);
-        console.log(waitingSockets);
         const enemy = waitingSockets.find((socket) => socket.socket.id === message.socketId);
 
-        const user_1_is_white = randomInt(2);
+        const user_1_is_white = Math.floor(Math.random() * 2);
         const createGameRequest = {
             userOne: user_1_is_white ? message.userId : enemy?.userId ?? -1,
             userTwo: user_1_is_white ? enemy?.userId ?? -1 : message.userId,
         };
-        console.log(createGameRequest);
         gameController.create(createGameRequest, (error, response) => {
             if (error) {
                 console.error(error);
             } else {
-                console.log(response);
                 socket.join(String(response.id));
                 enemy.socket.join(String(response.id));
                 waitingSockets = waitingSockets.filter((socket) => socket.id !== socketId);
@@ -88,7 +84,6 @@ io.on('connect', (socket) => {
         });
     });
     socket.on('rejoinGame', (roomId) => {
-        console.log(roomId);
         socket.join(String(roomId));
     });
     socket.on('playerMove', (message) => {
@@ -101,12 +96,34 @@ io.on('connect', (socket) => {
             isWhite: message.isWhite,
             killed: message.killed,
         };
-        console.log(createMoveRequest);
         moveController.create(createMoveRequest, (error) => {
             if (error) {
                 console.error(error);
             } else {
                 socket.to(String(message.gameId)).emit('enemyMove', message);
+            }
+        });
+    });
+    socket.on('endGameRequest', (message) => {
+        const partialUpdateGameRequest = {
+            id: message.gameId,
+            winner: message.winner,
+            userOnePoints: message.userOnePoints,
+            userTwoPoints: message.userTwoPoints,
+            status: 'FINISHED',
+        };
+        console.log(partialUpdateGameRequest);
+        gameController.partialUpdate(partialUpdateGameRequest, (error, response) => {
+            if (error) {
+                console.error(error);
+            } else {
+                console.log(response);
+                io.to(String(message.gameId)).emit('gameEnd', {
+                    winner: response.winner,
+                    openGames: openGames,
+                });
+                socket.leave(String(message.gameId));
+                socket.join(COMMON_ROOM);
             }
         });
     });

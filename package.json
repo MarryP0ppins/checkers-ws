@@ -1,9 +1,12 @@
 {
   "name": "checkers-ws",
   "version": "1.0.0",
-  "main": "src/index.mjs",
+  "main": "index.mjs",
   "scripts": {
-    "start": "nodemon src/index.mjs",
+    "start":"nodemon index.mjs",
+    "pm2:start": "pm2 start index.mjs -i=2",
+    "pm2:stop":"pm2 stop index.mjs",
+    "pm2:restart": "pm2 restart index.mjs",
     "prettier": "prettier --write \"src/**/*.+(js|jsx|ts|tsx|json)\""
   },
   "devDependencies": {
@@ -21,6 +24,7 @@
     "gulp-livereload": "4.0.2",
     "gulp-nodemon": "2.5.0",
     "gulp-typescript": "5.0.1",
+    "pm2": "^5.3.0",
     "react-scripts": "5.0.1",
     "socket.io": "4.6.1"
   },
