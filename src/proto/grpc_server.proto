@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package grpc_server;
+
+service GameController {
+    rpc Create(CreateGameRequest) returns (GameResponse) {}
+    rpc PartialUpdate(CreateGamePartialUpdateRequest) returns (GameResponse) {}
+}
+
+service MoveController {
+    rpc Create(CreateMoveRequest) returns (MoveResponse) {}
+}
+
+message CreateGameRequestUserInfo {
+    int32 id = 1;
+    string username = 2;
+    string email = 3;
+}
+
+message CreateGamePartialUpdateRequest {
+    int32 id = 1;
+    string winner = 2;
+    double userOnePoints = 3;
+    double userTwoPoints = 4;
+    string status = 5;
+}
+
+message CreateGameRequest {
+    int32 userOne = 1;
+    int32 userTwo = 2;
+}
+
+message GameResponse {
+    int32 id = 1;
+    CreateGameRequestUserInfo userOneInfo = 2;
+    CreateGameRequestUserInfo userTwoInfo = 3;
+    bool userOneTurn = 4;
+    string winner = 5;
+    double userOnePoints = 6;
+    double userTwoPoints = 7;
+    string startAt = 8;
+    string finishAt = 9;
+    string status = 10;
+}
+
+message CreateMoveRequest {
+    int32 game = 1;
+    int32 user = 2;
+    int32 checkerId = 3;
+    repeated string newPositions = 4;
+    bool isKing = 5;
+    bool isWhite = 6;
+    bool isDead = 7;
+    repeated int32 killed = 8;
+}
+
+message MoveResponse {
+    int32 id = 1; 
+    int32 game = 2;
+    int32 user = 3;
+    int32 checkerId = 4;
+    repeated string newPositions = 5;
+    bool isKing = 6;
+    bool isWhite = 7;
+    bool isDead = 8;
+    bool isLastMove = 9;
+}
