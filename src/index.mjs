@@ -3,14 +3,14 @@ import { Server } from 'socket.io';
 import grpc from '@grpc/grpc-js';
 import { loadSync } from '@grpc/proto-loader';
 import { randomInt } from 'crypto';
-import express from "express";
+import express from 'express';
 const app = express();
 
 const httpServer = createServer(app); //app
 
 app.get('/', (req, res) => {
-    res.send('<h1>CHECKERS-WS</h1>');
-})
+    res.json({ message: 'ok' });
+});
 
 // Listening to the server we created on port 5000.
 httpServer.listen(5000);
@@ -87,10 +87,10 @@ io.on('connect', (socket) => {
             }
         });
     });
-    socket.on('rejoinGame',  (roomId)=>{
-        console.log(roomId)
-        socket.join(String(roomId))
-    })
+    socket.on('rejoinGame', (roomId) => {
+        console.log(roomId);
+        socket.join(String(roomId));
+    });
     socket.on('playerMove', (message) => {
         const createMoveRequest = {
             game: message.gameId,
