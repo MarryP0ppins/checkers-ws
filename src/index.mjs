@@ -8,6 +8,10 @@ const app = express();
 
 const httpServer = createServer(app); //app
 
+app.get('/', (req, res) => {
+    res.send('<h1>CHECKERS-WS</h1>');
+})
+
 // Listening to the server we created on port 5000.
 httpServer.listen(5000);
 
