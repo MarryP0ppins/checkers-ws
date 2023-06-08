@@ -4,8 +4,7 @@
   "main": "src/index.mjs",
   "scripts": {
     "start": "nodemon src/index.mjs",
-    "prettier": "prettier --write \"src/**/*.+(js|jsx|ts|tsx|json)\"",
-    "build": "tsc"
+    "prettier": "prettier --write \"src/**/*.+(js|jsx|ts|tsx|json)\""
   },
   "devDependencies": {
     "grpc-tools": "^1.12.4",
