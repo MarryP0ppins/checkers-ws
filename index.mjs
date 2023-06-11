@@ -63,6 +63,7 @@ io.on('connect', (socket) => {
     });
     socket.on('joinGame', (message) => {
         socket.leave(COMMON_ROOM);
+        waitingSockets.push({ socket: socket, userId: message.userId });
         const enemy = waitingSockets.find((socket) => socket.socket.id === message.socketId);
 
         const user_1_is_white = Math.floor(Math.random() * 2);
@@ -76,9 +77,10 @@ io.on('connect', (socket) => {
             } else {
                 socket.join(String(response.id));
                 enemy.socket.join(String(response.id));
-                waitingSockets = waitingSockets.filter((socket) => socket.id !== socketId);
                 io.to(String(response.id)).emit('gameStart', response);
-                openGames = openGames.filter((game) => game.socketId !== socketId);
+                openGames = openGames.filter(
+                    (game) => game.userId !== response.userOneInfo.id && game.userId !== response.userTwoInfo.id,
+                );
                 io.to(COMMON_ROOM).emit('removeOpenGame', socketId);
             }
         });
@@ -122,8 +124,14 @@ io.on('connect', (socket) => {
                     winner: response.winner,
                     openGames: openGames,
                 });
-                socket.leave(String(message.gameId));
-                socket.join(COMMON_ROOM);
+                const player_1 = waitingSockets.find((socket) => socket.userId === response.userOneInfo.id);
+                player_1.socket.leave(String(message.gameId));
+                player_1.socket.join(COMMON_ROOM);
+                waitingSockets = waitingSockets.filter((socket) => socket.userId !== player_1.userId);
+                const player_2 = waitingSockets.find((socket) => socket.userId === response.userTwoInfo.id);
+                player_2.socket.leave(String(message.gameId));
+                player_2.socket.join(COMMON_ROOM);
+                waitingSockets = waitingSockets.filter((socket) => socket.userId !== player_2.userId);
             }
         });
     });
